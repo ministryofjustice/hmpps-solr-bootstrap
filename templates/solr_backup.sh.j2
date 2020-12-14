@@ -1,0 +1,28 @@
+#!/bin/bash
+
+JOB_TYPE=$1
+
+if [ -z "${JOB_TYPE}" ]
+then
+    echo "JOB_TYPE argument not supplied."
+    exit 1
+fi
+
+aws configure set default.s3.max_concurrent_requests 250
+
+PREFIX_DATE=$(date +%F)
+
+case ${JOB_TYPE} in
+  solr-backup)
+    echo "Running solr backup"
+    BACKUP_DIR="{{ solr_backup_dir }}"
+
+    # Perform backup daily
+    echo "Running command: aws s3 sync ${BACKUP_DIR}/ s3://{{ solr_backups_bucket }}/solr/${PREFIX_DATE}/"
+    aws s3 sync ${BACKUP_DIR}/ s3://{{ solr_backups_bucket }}/solr/${PREFIX_DATE}/ && echo Success || exit $?
+    rm -rf ${BACKUP_DIR}/*
+    ;;
+  *)
+    echo "${JOB_TYPE} argument is not a valid argument. solr-backup"
+  ;;
+esac

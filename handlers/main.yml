@@ -1,0 +1,17 @@
+---
+# handlers file for hmpps-solr-bootstrap
+
+- name: restart Solr Linux
+  systemd:
+    name: "{{ solr_service_name }}"
+    state: restarted
+    daemon_reload: true
+    enabled: "{{ solr_service_autostart }}"
+  when:
+    - solr_with_systemd
+    - solr_service_start
+
+- name: restart chronyd
+  service:
+    name: chronyd
+    state: restarted

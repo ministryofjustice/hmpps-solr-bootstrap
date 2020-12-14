@@ -1,0 +1,68 @@
+---
+- name: Set network and instance facts
+  set_fact:
+    instance_name: "{{ instance_data.content }}"
+
+- block:
+    - name: Set hostname fact
+      set_fact:
+        hostname: "{{ instance_name }}"
+  when: not ansible_env.HMPPS_ROLE|default(False)
+
+- block:
+    - name: Set hostname fact
+      set_fact:
+        hostname: "{{ ansible_env.HMPPS_ROLE }}-{{ instance_name }}"
+  when: ansible_env.HMPPS_ROLE|default(False)
+
+- name: Reload systemd daemon
+  systemd:
+    name: awslogs
+    daemon_reload: true
+
+- name: Stop our services to reconfigure them
+  service:
+    name: "{{ item }}"
+    state: stopped
+  with_items:
+    - logstash
+    - filebeat
+
+- name: Set our grok pattern directory
+  set_fact:
+    grok_dir: /opt/logstash/patterns
+
+- name: Ensure directory exists
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /var/awslogs/etc
+    - "{{ grok_dir }}"
+
+- name: Update our logstash pipeline files
+  template:
+    src: "{{ role_path }}/templates/logstash/{{ item }}.j2"
+    dest: "/etc/logstash/conf.d/{{ item }}"
+  with_items:
+    - "01-logstash-filebeat-input.conf"
+    - "50_logstash-output.conf"
+
+- name: Create our filebeat config
+  template:
+    src: "{{ role_path }}/templates/filebeat.yml"
+    dest: "/etc/filebeat/filebeat.yml"
+
+- name: Replace our awslogs conf file
+  template:
+    src: "{{ role_path }}/templates/awslogs.conf.j2"
+    dest: "/var/awslogs/etc/awslogs.conf"
+
+- name: Start our services post reconfiguration
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - logstash
+    - filebeat

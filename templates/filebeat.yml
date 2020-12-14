@@ -1,0 +1,54 @@
+---
+################### Filebeat Configuration Example #########################
+
+############################# Filebeat ######################################
+filebeat:
+  inputs:
+    - type: log
+      paths:
+        - /opt/solr/alfresco-search-services/logs/solr.log
+      fields:
+        document_type: solr
+      tags: ["solr"]
+    - type: log
+      paths:
+        - /opt/solr/alfresco-search-services/logs/solr-8983-console.log
+      fields:
+        document_type: solr
+      tags: ["solr_console"]
+    - type: log
+      paths:
+        - /opt/solr/alfresco-search-services/logs/solr_gc.log*
+      fields:
+        document_type: solr
+      tags: ["solr_gc"]
+
+output:
+  logstash:
+    hosts: ["localhost:5044"]
+    index: filebeat
+
+multiline:
+  pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+  negate: true
+  match: after
+
+#========================== General ==================================
+tags:
+  [
+    "{{ lookup('env', 'HMPPS_ROLE')}}",
+    "{{ lookup('env', 'HMPPS_STACK')}}",
+    "{{ lookup('env', 'HMPPS_FQDN')}}",
+  ]
+
+############################# Logging #########################################
+
+logging:
+  to_syslog: false
+  to_files: true
+  files:
+    path: /var/log/beats
+    name: filebeat
+    rotateeverybytes: 10485760 # = 10MB
+    keepfiles: 7
+  level: "{{ debug_level|default('info') }}"

@@ -1,0 +1,97 @@
+---
+- name: Create required directories for solr
+  file:
+    state: directory
+    path: "{{ solr_home_base }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+
+- name: Copy solr home dirs
+  copy:
+    src: "{{ solr_base_path }}/solrhome"
+    dest: "{{ solr_home_base }}/"
+    remote_src: "{{ remote_src_copy }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    force: no
+  notify:
+    - restart Solr Linux
+
+- name: Adjusting solr java heap memory and other settings
+  template:
+    src: solr.in.sh.j2
+    dest: "{{ solr_insh_default }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0640
+  notify:
+    - restart Solr Linux
+
+- name: Manage solrcore.properties
+  template:
+    src: solrcore.properties.j2
+    dest: "{{ solrcore_properties_file }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0640
+  notify:
+    - restart Solr Linux
+
+- name: Ensure conf dirs are present
+  file:
+    path: "{{ solr_conf_dirs }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0750
+    state: directory
+  loop:
+    - "{{ solr_home }}/alfresco"
+    - "{{ solr_home }}/alfresco/conf"
+    - "{{ solr_home }}/archive/conf"
+  loop_control:
+    loop_var: solr_conf_dirs
+
+- name: Manage solr config.xml
+  template:
+    src: solrconfig.xml.j2
+    dest: "{{ solr_config_xml_file }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0640
+  notify:
+    - restart Solr Linux
+
+- name: Manage archive conf solrconfig.xml
+  template:
+    src: archive_solrconfig.xml.j2
+    dest: "{{ archive_solr_config_xml_file }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0640
+  notify:
+    - restart Solr Linux
+
+- name: Recursively set ownership of solr directories
+  file:
+    path: "{{ solr_root }}"
+    state: directory
+    recurse: yes
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+  notify:
+    - restart Solr Linux
+
+- name: Recursively set ownership of solr temp
+  file:
+    path: "{{ solr_temp_dir }}"
+    state: directory
+    recurse: yes
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+  notify:
+    - restart Solr Linux
+
+- name: Solr service autostart set
+  service:
+    name: "{{ solr_service_name }}"
+    enabled: "{{ solr_service_autostart }}"

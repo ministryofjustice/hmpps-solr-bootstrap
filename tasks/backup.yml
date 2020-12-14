@@ -1,0 +1,13 @@
+---
+- name: Backup solr data script
+  template:
+    src: solr_backup.sh.j2
+    dest: "{{ solr_backups_script_name }}"
+  when: solr_backups_enabled
+
+- name: Backup solr cron task"
+  cron:
+    name: "solr_backup"
+    minute: "30"
+    hour: "{{ solr_backups_cron_hour }}"
+    job: "sh {{ solr_backups_script_name }} solr-backup > /dev/null"

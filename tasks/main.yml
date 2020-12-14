@@ -1,0 +1,24 @@
+---
+# tasks file for hmpps-solr-bootstrap
+
+- name: get instance_id
+  uri:
+    url: http://169.254.169.254/latest/meta-data/instance-id
+    return_content: yes
+  register: instance_data
+
+# - name: Reconfigure our system time sync
+#   include: configure_time.yml
+# - name: Manage system packages
+#   include: system/packages.yml
+# - name: Reconfigure our logging services so we audit correctly
+#   include: system/configure_auditing.yml
+#   when:
+#     - manage_auditing
+
+# - name: manage storage devices
+#   include_tasks: manage_storage.yml
+#   when: manage_storage
+
+- name: update solr config
+  include_tasks: configure_solr.yml

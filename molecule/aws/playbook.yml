@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - hmpps-solr-bootstrap
+  vars_files:
+    - vars/aws.yml

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+num=1
+RUN_LOOP=true
+while $RUN_LOOP
+do
+    if [ $num -ge 600 ]; then
+        echo "Check volume task expired"
+        RUN_LOOP=false
+        exit 1
+    fi
+
+    current_state=$(aws --region {{ region }} ec2 describe-volumes --volume-ids {{ volume_id }} | jq .Volumes[0].State | tr -d \")
+    if [ "$current_state" == "in-use" ]; then
+        echo "{{ volume_id }} is in use, message number $num"
+    elif [ "$current_state" == "available" ]; then
+        echo "{{ volume_id }} is available"
+        RUN_LOOP=false
+        exit 0
+    fi
+
+    let num++
+    sleep 30
+done

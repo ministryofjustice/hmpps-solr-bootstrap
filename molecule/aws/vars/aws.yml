@@ -1,0 +1,51 @@
+---
+common_name: test-hmpps-solr-bootstrap
+solr_device_name: /dev/xvdc
+solr_volume_name: "{{ common_name }}-data"
+solr_temp_volume_name: "{{ common_name }}-temp"
+solr_temp_device_name: /dev/xvdd
+solr_temp_dir: /tmp/solr
+solr_additional_opts: "-Djava.io.tmpdir={{ solr_temp_dir }}"
+logstash_host: "localhost"
+kibana_host: "localhost"
+monitoring_host: "localhost"
+elasticsearch_ssl: "false"
+internal_domain: "test.local"
+bucket_name: "{{ common_name }}"
+db_user: alfresco
+db_password: alfresco
+db_name: "alfresco"
+db_host: "localhost"
+cluster_name: "test-cluster"
+cluster_subnet: ""
+monitoring_server_url: "localhost"
+monitoring_cluster_name: "{{ common_name }}"
+cldwatch_log_group: "{{ common_name }}/alfresco-int"
+region: "eu-west-2"
+external_fqdn: "localhost"
+alfresco_protocol: "http"
+alfresco_port: "8080"
+cluster_enabled: "true"
+messaging_broker_url: "localhost:61616"
+messaging_broker_password: alfresco
+remote_user_filename: "dev"
+logstash_version: "5.6.15"
+tomcat_maxthreads: "150"
+manage_auditing: true
+running_in_test_mode: true
+hostname: "{{ ansible_hostname }}"
+solr_index: true
+solr_host: localhost
+solr_port: 8983
+solr_base_url: /solr
+remote_src_copy: true
+
+# backups
+solr_backups_enabled: true
+solr_backups_bucket: "{{ common_name }}"
+
+dns_zone_id: Z3C00GP5LAWZMF
+dns_zone_name: engineering-dev.internal
+solr_dns_record: solr
+
+artifact_bucket: "tf-eu-west-2-hmpps-eng-dev-config-s3bucket"

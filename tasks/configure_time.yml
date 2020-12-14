@@ -1,0 +1,16 @@
+---
+# Debian config path.  Change for CentOS
+- name: install chrony.conf
+  template:
+    src: "{{ role_path }}/templates/chrony/chrony.conf.j2"
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart chronyd
+
+- name: Ensure chronyd is active
+  service:
+    name: chronyd
+    state: restarted

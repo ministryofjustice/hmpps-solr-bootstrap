@@ -1,0 +1,183 @@
+---
+- name: Create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  # no_log: "{{ molecule_no_log }}"
+  vars_files:
+    - vars/aws.yml
+  vars:
+    ssh_user: centos
+    ssh_port: 22
+    vpc_id: vpc-02321f288159e5d0e
+    security_group_name: "{{ common_name }}"
+    security_group_description: "{{ common_name }}"
+    security_group_rules:
+      - proto: tcp
+        from_port: "{{ ssh_port }}"
+        to_port: "{{ ssh_port }}"
+        cidr_ip: "0.0.0.0/0"
+      - proto: icmp
+        from_port: 8
+        to_port: -1
+        cidr_ip: "0.0.0.0/0"
+    security_group_rules_egress:
+      - proto: -1
+        from_port: 0
+        to_port: 0
+        cidr_ip: "0.0.0.0/0"
+
+    keypair_name: molecule_key
+    keypair_path: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/ssh_key"
+  tasks:
+    - name: Create security group
+      ec2_group:
+        name: "{{ security_group_name }}"
+        description: "{{ security_group_name }}"
+        rules: "{{ security_group_rules }}"
+        rules_egress: "{{ security_group_rules_egress }}"
+        vpc_id: "{{ vpc_id }}"
+      register: sg_output
+
+    - name: Test for presence of local keypair
+      stat:
+        path: "{{ keypair_path }}"
+      register: keypair_local
+
+    - name: Delete remote keypair
+      ec2_key:
+        name: "{{ keypair_name }}"
+        state: absent
+      when: not keypair_local.stat.exists
+
+    - name: Create keypair
+      ec2_key:
+        name: "{{ keypair_name }}"
+      register: keypair
+
+    - name: Persist the keypair
+      copy:
+        dest: "{{ keypair_path }}"
+        content: "{{ keypair.key.private_key }}"
+        mode: 0600
+      when: keypair.changed
+
+    - name: Get the ec2 ami(s) by owner and name, if image not set
+      ec2_ami_info:
+        owners: "{{ item.image_owner }}"
+        filters:
+          name: "{{ item.image_name }}"
+      loop: "{{ molecule_yml.platforms }}"
+      when: item.image is not defined
+      register: ami_facts
+
+    # Create a empty s3 bucket
+    - name: create bucket
+      aws_s3:
+        bucket: "{{ common_name }}"
+        mode: create
+        permission: private
+
+    - name: Create molecule instance(s)
+      ec2:
+        key_name: "{{ keypair_name }}"
+        image: "{{ item.image
+          if item.image is defined
+          else (ami_facts.results[index].images | sort(attribute='creation_date', reverse=True))[0].image_id }}"
+        instance_type: "{{ item.instance_type }}"
+        vpc_subnet_id: "{{ item.vpc_subnet_id }}"
+        group_id: "{{ sg_output.group_id }}"
+        instance_tags: "{{ item.instance_tags | combine({'instance': item.name})
+          if item.instance_tags is defined
+          else {'instance': item.name} }}"
+        wait: true
+        instance_profile_name: "{{ item.instance_profile_name }}"
+        assign_public_ip: true
+        exact_count: 1
+        count_tag:
+          instance: "{{ item.name }}"
+      register: server
+      loop: "{{ molecule_yml.platforms }}"
+      loop_control:
+        index_var: index
+      async: 7200
+      poll: 0
+
+    - name: Wait for instance(s) creation to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: ec2_jobs
+      until: ec2_jobs.finished
+      retries: 300
+      with_items: "{{ server.results }}"
+
+    # Mandatory configuration for Molecule to function.
+
+    - name: Populate instance config dict
+      set_fact:
+        instance_conf_dict:
+          {
+            "instance": "{{ item.instances[0].tags.instance }}",
+            "address": "{{ item.instances[0].public_ip }}",
+            "user": "{{ ssh_user }}",
+            "port": "{{ ssh_port }}",
+            "identity_file": "{{ keypair_path }}",
+            "instance_ids": "{{ item.instance_ids }}",
+          }
+      with_items: "{{ ec2_jobs.results }}"
+      register: instance_config_dict
+      when: server.changed | bool
+
+    - name: create data ebs volume
+      ec2_vol:
+        instance: "{{ instance_conf_dict.instance_ids[0] }}"
+        volume_size: "50"
+        volume_type: "gp2"
+        name: "{{ common_name }}-data"
+        device_name: "{{ solr_device_name }}"
+        delete_on_termination: yes
+        region: "{{ region }}"
+        tags:
+          application: solr
+          service: alfresco
+          type: data
+          solr_ebs_managed: true
+
+    - name: create temp ebs volume
+      ec2_vol:
+        instance: "{{ instance_conf_dict.instance_ids[0] }}"
+        volume_size: "20"
+        volume_type: "gp2"
+        name: "{{ common_name }}-temp"
+        device_name: "{{ solr_temp_device_name }}"
+        delete_on_termination: yes
+        region: "{{ region }}"
+        tags:
+          application: solr
+          service: alfresco
+          type: temp
+          solr_ebs_managed: true
+
+    - name: Convert instance config dict to a list
+      set_fact:
+        instance_conf: "{{ instance_config_dict.results | map(attribute='ansible_facts.instance_conf_dict') | list }}"
+      when: server.changed | bool
+
+    - name: Dump instance config
+      copy:
+        content: "{{ instance_conf | to_json | from_json | molecule_to_yaml | molecule_header }}"
+        dest: "{{ molecule_instance_config }}"
+      when: server.changed | bool
+
+    - name: Wait for SSH
+      wait_for:
+        port: "{{ ssh_port }}"
+        host: "{{ item.address }}"
+        search_regex: SSH
+        delay: 10
+        timeout: 320
+      with_items: "{{ lookup('file', molecule_instance_config) | molecule_from_yaml }}"
+
+    - name: Wait for boot process to finish
+      pause:
+        minutes: 2

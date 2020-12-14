@@ -1,0 +1,84 @@
+---
+- name: Add solr root
+  file:
+    path: "{{ solr_root }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0750
+    state: directory
+
+- name: "create mount path for solr data"
+  file:
+    state: "directory"
+    path: "{{ solr_home_base }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+
+- name: Read device information
+  parted: device={{ solr_device_name }} unit=MiB
+  register: sdb_info
+
+- name: "create partition on {{ solr_volume_name }}"
+  parted:
+    device: "{{ solr_device_name }}"
+    number: 1
+    label: "gpt"
+    part_start: "0%"
+    part_end: "100%"
+    name: "data"
+    state: "present"
+  when: not sdb_info.partitions
+
+- name: "format partition on {{ solr_volume_name }}"
+  filesystem:
+    dev: "{{ solr_device_name }}"
+    fstype: "{{ solr_volume_fs_type }}"
+  when: not sdb_info.partitions
+
+- name: "mount the partition for {{ solr_volume_name }}"
+  mount:
+    path: "{{ solr_home_base }}"
+    src: "{{ solr_device_name }}"
+    fstype: "{{ solr_volume_fs_type }}"
+    state: "mounted"
+
+#
+- name: "attach temp volume {{ solr_temp_volume_name }}"
+  ec2_vol:
+    instance: "{{ instance_data.content }}"
+    name: "{{ solr_temp_volume_name }}"
+    device_name: "{{ solr_temp_device_name }}"
+    region: "{{ region }}"
+
+- name: "create temp mount path for {{ solr_temp_volume_name }}"
+  file:
+    state: "directory"
+    path: "{{ solr_temp_dir }}"
+
+- name: Read temp device information
+  parted: device={{ solr_temp_device_name }} unit=MiB
+  register: temp_disk
+
+- name: "create temp partition on {{ solr_temp_volume_name }}"
+  parted:
+    device: "{{ solr_temp_device_name }}"
+    number: 1
+    label: "gpt"
+    part_start: "0%"
+    part_end: "100%"
+    name: "data"
+    state: "present"
+  when: not temp_disk.partitions
+
+- name: "format temp partition on {{ solr_temp_volume_name }}"
+  filesystem:
+    dev: "{{ solr_temp_device_name }}"
+    fstype: "{{ solr_volume_fs_type }}"
+  when: not temp_disk.partitions
+
+- name: "mount the temp partition for {{ solr_temp_volume_name }}"
+  mount:
+    path: "{{ solr_temp_dir }}"
+    src: "{{ solr_temp_device_name }}"
+    fstype: "{{ solr_volume_fs_type }}"
+    state: "mounted"
