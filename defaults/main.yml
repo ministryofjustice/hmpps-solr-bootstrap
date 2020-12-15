@@ -33,6 +33,8 @@ solr_with_systemd: true
 solr_service_restart: always
 solr_service_start: true
 solr_service_autostart: true
+solr_shard_method: DB_ID_RANGE
+solr_shard_count: "0-20000000"
 
 manage_auditing: true
 manage_storage: true

@@ -179,5 +179,6 @@ solr.suggester.minSecsBetweenBuilds=3600
 #
 alfresco.contentStreamLimit=10000000
 #Shard setup
-shard.method=DB_ID
+shard.method={{ solr_shard_method }}
+shard.range={{ solr_shard_range }}
 #END of solrcore
