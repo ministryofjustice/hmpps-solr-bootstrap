@@ -43,13 +43,6 @@
     state: "mounted"
 
 #
-- name: "attach temp volume {{ solr_temp_volume_name }}"
-  ec2_vol:
-    instance: "{{ instance_data.content }}"
-    name: "{{ solr_temp_volume_name }}"
-    device_name: "{{ solr_temp_device_name }}"
-    region: "{{ region }}"
-
 - name: "create temp mount path for {{ solr_temp_volume_name }}"
   file:
     state: "directory"

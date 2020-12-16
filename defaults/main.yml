@@ -34,7 +34,7 @@ solr_service_restart: always
 solr_service_start: true
 solr_service_autostart: true
 solr_shard_method: DB_ID_RANGE
-solr_shard_count: "0-20000000"
+solr_shard_range: "0-20000000"
 
 manage_auditing: true
 manage_storage: true
@@ -53,3 +53,6 @@ alfresco_port: 8080
 solrcore_properties_file: "{{ solr_home }}/templates/rerank/conf/solrcore.properties"
 solr_config_xml_file: "{{ solr_home }}/alfresco/conf/solrconfig.xml"
 archive_solr_config_xml_file: "{{ solr_home }}/archive/conf/solrconfig.xml"
+
+remote_src_copy: false
+cldwatch_log_group: "solr"
