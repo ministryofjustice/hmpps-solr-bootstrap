@@ -52,6 +52,7 @@ solr_backup_dir: "{{ solr_temp_dir }}/backups"
 
 alfresco_host: localhost
 alfresco_port: 8080
+alfresco_ssl_port: 443
 solrcore_properties_file: "{{ solr_home }}/templates/rerank/conf/solrcore.properties"
 solr_config_xml_file: "{{ solr_home }}/alfresco/conf/solrconfig.xml"
 archive_solr_config_xml_file: "{{ solr_home }}/archive/conf/solrconfig.xml"
