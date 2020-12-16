@@ -1,4 +1,49 @@
 ---
+- name: set volume name facts
+  set_fact:
+    solr_data_volume_name: "{{ prefix + '-' + instance_az + '-data' }}"
+    solr_temp_volume_name: "{{ prefix + '-' + instance_az + '-temp' }}"
+
+- name: Gather information about solr volume
+  ec2_vol_facts:
+    region: "{{ region }}"
+    filters:
+      "tag:Name": "{{ solr_data_volume_name }}"
+  register: volume_info
+
+- name: set volume fact
+  set_fact:
+    volume_id: "{{ volume_info.volumes[0].id }}"
+    volume_status: "{{ volume_info.volumes[0].attachment_set.instance_id != instance_data.content }}"
+
+- name: Async script to check ebs volume status
+  template:
+    src: check_ebs_volume.sh.j2
+    dest: /root/check_ebs_volume.sh
+  when: volume_status
+
+- name: wait for ebs to be released and continue with play
+  command: "sh /root/check_ebs_volume.sh"
+  async: 600
+  poll: 10
+  register: check_volume_state
+  when: volume_status
+
+- name: check volume async task
+  async_status:
+    jid: "{{ check_volume_state.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 60
+  delay: 10
+  when: volume_status
+
+- name: attach ebs volume
+  ec2_vol:
+    instance: "{{ instance_data.content }}"
+    name: "{{ solr_data_volume_name }}"
+    device_name: "{{ solr_data_device_name }}"
+    region: "{{ region }}"
 - name: Add solr root
   file:
     path: "{{ solr_root }}"
@@ -15,12 +60,12 @@
     group: "{{ solr_group }}"
 
 - name: Read device information
-  parted: device={{ solr_device_name }} unit=MiB
+  parted: device={{ solr_data_device_name }} unit=MiB
   register: sdb_info
 
-- name: "create partition on {{ solr_volume_name }}"
+- name: "create partition on {{ solr_data_volume_name }}"
   parted:
-    device: "{{ solr_device_name }}"
+    device: "{{ solr_data_device_name }}"
     number: 1
     label: "gpt"
     part_start: "0%"
@@ -29,16 +74,16 @@
     state: "present"
   when: not sdb_info.partitions
 
-- name: "format partition on {{ solr_volume_name }}"
+- name: "format partition on {{ solr_data_volume_name }}"
   filesystem:
-    dev: "{{ solr_device_name }}"
+    dev: "{{ solr_data_device_name }}"
     fstype: "{{ solr_volume_fs_type }}"
   when: not sdb_info.partitions
 
-- name: "mount the partition for {{ solr_volume_name }}"
+- name: "mount the partition for {{ solr_data_volume_name }}"
   mount:
     path: "{{ solr_home_base }}"
-    src: "{{ solr_device_name }}"
+    src: "{{ solr_data_device_name }}"
     fstype: "{{ solr_volume_fs_type }}"
     state: "mounted"
 

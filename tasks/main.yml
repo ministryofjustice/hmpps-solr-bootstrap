@@ -7,6 +7,16 @@
     return_content: yes
   register: instance_data
 
+- name: Gather information about instance
+  uri:
+    url: http://169.254.169.254/latest/dynamic/instance-identity/document
+    return_content: yes
+  register: instance_info
+
+- name: set instance_facts
+  set_fact:
+    instance_az: "{{ instance_info.json.availabilityZone }}"
+
 - name: Reconfigure our system time sync
   include: configure_time.yml
 

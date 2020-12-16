@@ -10,8 +10,8 @@
     ssh_user: centos
     ssh_port: 22
     vpc_id: vpc-02321f288159e5d0e
-    security_group_name: "{{ common_name }}"
-    security_group_description: "{{ common_name }}"
+    security_group_name: "{{ prefix }}"
+    security_group_description: "{{ prefix }}"
     security_group_rules:
       - proto: tcp
         from_port: "{{ ssh_port }}"
@@ -74,7 +74,7 @@
     # Create a empty s3 bucket
     - name: create bucket
       aws_s3:
-        bucket: "{{ common_name }}"
+        bucket: "{{ prefix }}"
         mode: create
         permission: private
 
@@ -133,11 +133,12 @@
         instance: "{{ instance_conf_dict.instance_ids[0] }}"
         volume_size: "50"
         volume_type: "gp2"
-        name: "{{ common_name }}-data"
-        device_name: "{{ solr_device_name }}"
+        name: "{{ solr_data_volume_name }}"
+        device_name: "{{ solr_data_device_name }}"
         delete_on_termination: yes
         region: "{{ region }}"
         tags:
+          Name: "{{ solr_data_volume_name }}"
           application: solr
           service: alfresco
           type: data
@@ -148,11 +149,12 @@
         instance: "{{ instance_conf_dict.instance_ids[0] }}"
         volume_size: "20"
         volume_type: "gp2"
-        name: "{{ common_name }}-temp"
+        name: "{{ solr_temp_volume_name }}"
         device_name: "{{ solr_temp_device_name }}"
         delete_on_termination: yes
         region: "{{ region }}"
         tags:
+          Name: "{{ solr_temp_volume_name }}"
           application: solr
           service: alfresco
           type: temp

@@ -40,12 +40,14 @@ manage_auditing: true
 manage_storage: true
 #ebs
 region: eu-west-2
+solr_volume_name: solr_data
 solr_device_name: /dev/xvdc
 solr_volume_fs_type: xfs
 
 # temp
+solr_temp_volume_name: solr_temp
 solr_temp_device_name: /dev/xvdd
-solr_temp_dir: /tmp/solr
+solr_temp_dir: "{{ solr_root }}/tmp"
 solr_backup_dir: "{{ solr_temp_dir }}/backups"
 
 alfresco_host: localhost
@@ -56,3 +58,4 @@ archive_solr_config_xml_file: "{{ solr_home }}/archive/conf/solrconfig.xml"
 
 remote_src_copy: false
 cldwatch_log_group: "solr"
+prefix: "solr"
