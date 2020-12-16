@@ -40,8 +40,8 @@ manage_auditing: true
 manage_storage: true
 #ebs
 region: eu-west-2
-solr_volume_name: solr_data
-solr_device_name: /dev/xvdc
+solr_data_volume_name: solr_data
+solr_data_device_name: /dev/xvdc
 solr_volume_fs_type: xfs
 
 # temp
