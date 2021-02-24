@@ -1,5 +1,6 @@
 ---
 # defaults file for hmpps-solr-bootstrap
+instance_ip_address: "{{ ansible_default_ipv4.address }}"
 solr_version: 6.0.0
 solr_user: solr
 solr_group: solr
@@ -54,6 +55,7 @@ alfresco_host: localhost
 alfresco_port: 8080
 alfresco_ssl_port: 443
 solrcore_properties_file: "{{ solr_home }}/templates/rerank/conf/solrcore.properties"
+shared_properties_file: "{{ solr_home }}/conf/shared.properties"
 solr_config_xml_file: "{{ solr_home }}/alfresco/conf/solrconfig.xml"
 archive_solr_config_xml_file: "{{ solr_home }}/archive/conf/solrconfig.xml"
 

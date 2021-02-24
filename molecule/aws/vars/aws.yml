@@ -29,7 +29,7 @@ messaging_broker_url: "localhost:61616"
 messaging_broker_password: alfresco
 remote_user_filename: "dev"
 logstash_version: "5.6.15"
-manage_auditing: true
+manage_auditing: false
 running_in_test_mode: true
 hostname: "{{ ansible_hostname }}"
 solr_index: true

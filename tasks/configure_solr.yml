@@ -71,6 +71,16 @@
   notify:
     - restart Solr Linux
 
+- name: Manage shared.properties config
+  template:
+    src: shared.properties.j2
+    dest: "{{ shared_properties_file }}"
+    owner: "{{ solr_user }}"
+    group: "{{ solr_group }}"
+    mode: 0640
+  notify:
+    - restart Solr Linux
+
 - name: Recursively set ownership of solr directories
   file:
     path: "{{ solr_root }}"
