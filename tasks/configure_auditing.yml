@@ -1,7 +1,4 @@
 ---
-- name: Set network and instance facts
-  set_fact:
-    instance_name: "{{ instance_data.content }}"
 
 - block:
     - name: Set hostname fact

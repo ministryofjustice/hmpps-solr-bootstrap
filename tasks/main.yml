@@ -1,21 +1,14 @@
 ---
 # tasks file for hmpps-solr-bootstrap
+- name: Gather instance facts
+  ec2_metadata_facts:
+  register: instance_facts
 
-- name: get instance_id
-  uri:
-    url: http://169.254.169.254/latest/meta-data/instance-id
-    return_content: yes
-  register: instance_data
-
-- name: Gather information about instance
-  uri:
-    url: http://169.254.169.254/latest/dynamic/instance-identity/document
-    return_content: yes
-  register: instance_info
-
-- name: set instance_facts
+- name: set instance facts 
   set_fact:
-    instance_az: "{{ instance_info.json.availabilityZone }}"
+    instance_ip: "{{ instance_facts.ansible_facts.ansible_ec2_local_ipv4 }}"
+    instance_az: "{{ instance_facts.ansible_facts.ansible_ec2_placement_availability_zone }}"
+    instance_name: "{{ instance_facts.ansible_facts.ansible_ec2_instance_id }}"
 
 - name: Reconfigure our system time sync
   include: configure_time.yml
