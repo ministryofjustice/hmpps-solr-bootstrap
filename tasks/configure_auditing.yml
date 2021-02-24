@@ -3,13 +3,13 @@
 - block:
     - name: Set hostname fact
       set_fact:
-        hostname: "{{ instance_name }}"
+        hostname: "{{ instance_id }}"
   when: not ansible_env.HMPPS_ROLE|default(False)
 
 - block:
     - name: Set hostname fact
       set_fact:
-        hostname: "{{ ansible_env.HMPPS_ROLE }}-{{ instance_name }}"
+        hostname: "{{ ansible_env.HMPPS_ROLE }}-{{ instance_id }}"
   when: ansible_env.HMPPS_ROLE|default(False)
 
 - name: Reload systemd daemon

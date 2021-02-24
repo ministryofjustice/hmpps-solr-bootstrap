@@ -13,7 +13,7 @@
 - name: set volume fact
   set_fact:
     volume_id: "{{ volume_info.volumes[0].id }}"
-    volume_status: "{{ volume_info.volumes[0].attachment_set.instance_id != instance_data.content }}"
+    volume_status: "{{ volume_info.volumes[0].attachment_set.instance_id != instance_id }}"
 
 - name: Async script to check ebs volume status
   template:
@@ -39,7 +39,7 @@
 
 - name: attach ebs volume
   ec2_vol:
-    instance: "{{ instance_data.content }}"
+    instance: "{{ instance_id }}"
     name: "{{ volume_name }}"
     device_name: "{{ device_name }}"
     region: "{{ region }}"
