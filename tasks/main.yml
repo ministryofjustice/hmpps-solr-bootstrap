@@ -16,6 +16,7 @@
 - name: set instance_facts
   set_fact:
     instance_az: "{{ instance_info.json.availabilityZone }}"
+    node_ip_address: "{{ ansible_default_ipv4.address }}"
 
 - name: Reconfigure our system time sync
   include: configure_time.yml
